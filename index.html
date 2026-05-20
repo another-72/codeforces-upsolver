@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CF Personal Upsolver</title>
+        <style>
+            :root {
+                --bg-color: #0c0c0c;
+                --card-bg: #161616;
+                --card-hover: #1f1f1f;
+                --text-main: #f0f0f0;
+                --text-muted: #8892b0;
+                --border: #252525;
+
+                /* Dynamic Accent Colors */
+                --accent-review: #ffcc00;
+                --accent-contests: #00ff88;
+                --accent-global: #ff9f43;
+                --accent-target: #ff6b6b;
+                --accent: var(--accent-review);
+
+                --success-soft: rgba(0, 255, 136, 0.04);
+                --success-border: rgba(0, 255, 136, 0.2);
+            }
+
+            body {
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .container {
+                width: 100%;
+                max-width: 1300px;
+            }
+
+            header {
+                text-align: center;
+                margin-bottom: 15px;
+            }
+            h1 {
+                margin: 0;
+                font-size: 1.6rem;
+                font-weight: 800;
+                color: #fff;
+                opacity: 0.9;
+            }
+            .status-bar {
+                color: var(--text-muted);
+                font-size: 0.8rem;
+                margin-top: 4px;
+            }
+
+            .search-container {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+            input[type="text"] {
+                width: 280px;
+                padding: 10px 16px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--card-bg);
+                color: white;
+                outline: none;
+                transition: 0.2s;
+                font-size: 0.9rem;
+            }
+            input[type="text"]:focus {
+                border-color: var(--accent);
+            }
+
+            .tabs {
+                display: none;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                margin-bottom: 12px;
+            }
+            .tab-btn {
+                background: var(--card-bg);
+                color: var(--text-muted);
+                border: 1px solid var(--border);
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 0.85rem;
+                transition: 0.2s;
+            }
+
+            #tab-review.active {
+                background: var(--accent-review);
+                color: #000;
+                border-color: var(--accent-review);
+            }
+            #tab-contests.active {
+                background: var(--accent-contests);
+                color: #000;
+                border-color: var(--accent-contests);
+            }
+            #tab-globalUnsolved.active {
+                background: var(--accent-global);
+                color: #000;
+                border-color: var(--accent-global);
+            }
+            #tab-target.active {
+                background: var(--accent-target);
+                color: #000;
+                border-color: var(--accent-target);
+            }
+
+            .utility-bar {
+                padding: 8px;
+                margin-bottom: 10px;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .sub-tabs {
+                display: flex;
+                gap: 5px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .sub-tab-btn {
+                background: #161616;
+                color: var(--text-muted);
+                border: 1px solid var(--border);
+                padding: 6px 12px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                transition: 0.2s;
+            }
+            .sub-tab-btn.active {
+                background: #2a2a2a;
+                color: white;
+                border-color: #444;
+            }
+
+            .filter-controls {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .range-inputs {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .range-inputs input {
+                width: 60px;
+                background: #000;
+                border: 1px solid var(--border);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+            }
+
+            .data-group {
+                margin-bottom: 35px;
+                width: 100%;
+            }
+
+            /* REVERTED: Contest Title Font Size */
+            .group-title {
+                font-size: 1.3rem;
+                font-weight: 700;
+                margin-bottom: 15px;
+                color: var(--accent);
+            }
+
+            /* SRS GRID & CARD (Larger Size) */
+            .problem-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 12px;
+            }
+            .problem-card {
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 14px;
+                text-decoration: none;
+                color: var(--text-main);
+                display: flex;
+                flex-direction: column;
+                transition: 0.2s;
+                min-height: 80px;
+                cursor: pointer;
+                position: relative;
+            }
+            .problem-card:hover {
+                border-color: var(--accent);
+                background: var(--card-hover);
+                transform: translateY(-3px);
+            }
+
+            /* ADJUSTED COMPACT MODE (Contests and Global) */
+            .compact-view .problem-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 12px;
+            }
+            .compact-view .problem-card {
+                padding: 12px;
+                min-height: 72px;
+            }
+
+            /* REFINED: Smaller card font in compact view */
+            .compact-view .prob-name {
+                font-size: 0.9rem;
+            }
+            .compact-view .prob-header {
+                font-size: 0.75rem;
+                margin-bottom: 6px;
+            }
+
+            .is-solved-color {
+                background-color: var(--success-soft) !important;
+                border-color: var(--success-border) !important;
+            }
+
+            .prob-header {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+                font-family: monospace;
+            }
+            .prob-name {
+                font-size: 0.95rem;
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-bottom: 4px;
+            }
+
+            .solved-ago {
+                font-size: 0.7rem;
+                color: var(--text-muted);
+                font-style: italic;
+            }
+            .contest-tag {
+                display: inline-block;
+                background: rgba(255, 204, 0, 0.12);
+                color: #ffcc00;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 0.65rem;
+                font-weight: 800;
+                margin-top: 8px;
+                width: fit-content;
+                text-transform: uppercase;
+                letter-spacing: 0.02em;
+            }
+
+            .pass-actions {
+                display: flex;
+                gap: 6px;
+                margin-top: 12px;
+                padding-top: 10px;
+                border-top: 1px solid var(--border);
+            }
+            .pass-btn {
+                flex: 1;
+                padding: 5px;
+                font-size: 0.7rem;
+                border-radius: 5px;
+                border: 1px solid var(--border);
+                background: #222;
+                color: white;
+                cursor: pointer;
+            }
+            .pass-btn:disabled {
+                opacity: 0.2;
+            }
+
+            #target-editor {
+                width: 100%;
+                height: 60vh;
+                background: #080808;
+                color: #d1d1d1;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 20px;
+                box-sizing: border-box;
+                font-family: "JetBrains Mono", monospace;
+                resize: none;
+                line-height: 1.6;
+                font-size: 0.95rem;
+                outline: none;
+            }
+
+            .sync-btn {
+                background: #fff;
+                color: #000;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: 700;
+                cursor: pointer;
+                font-size: 0.9rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>CF Personal Upsolver</h1>
+                <div class="status-bar" id="status">Sync to start</div>
+            </header>
+
+            <div class="search-container">
+                <input
+                    type="text"
+                    id="handleInput"
+                    placeholder="Codeforces Handle"
+                    value="prncofprs"
+                />
+                <button class="sync-btn" onclick="fetchData()">
+                    Sync Data
+                </button>
+            </div>
+
+            <div class="tabs" id="mainTabs">
+                <button
+                    class="tab-btn active"
+                    id="tab-review"
+                    onclick="switchTab('review')"
+                >
+                    Spaced Repetition and Review
+                </button>
+                <button
+                    class="tab-btn"
+                    id="tab-contests"
+                    onclick="switchTab('contests')"
+                >
+                    Contests View
+                </button>
+                <button
+                    class="tab-btn"
+                    id="tab-globalUnsolved"
+                    onclick="switchTab('globalUnsolved')"
+                >
+                    Global Unsolved
+                </button>
+                <button
+                    class="tab-btn"
+                    id="tab-target"
+                    onclick="switchTab('target')"
+                >
+                    Target
+                </button>
+            </div>
+
+            <div class="utility-bar" id="utilityBar">
+                <div id="srsContainer" class="sub-tabs" style="display: none">
+                    <button
+                        class="sub-tab-btn active"
+                        onclick="switchSubTab('contest_unreviewed')"
+                    >
+                        Contests Unreviewed
+                    </button>
+                    <button class="sub-tab-btn" onclick="switchSubTab(0)">
+                        All Unreviewed
+                    </button>
+                    <button class="sub-tab-btn" onclick="switchSubTab(1)">
+                        Pass 1
+                    </button>
+                    <button class="sub-tab-btn" onclick="switchSubTab(2)">
+                        Pass 2
+                    </button>
+                    <button class="sub-tab-btn" onclick="switchSubTab(3)">
+                        Pass 3
+                    </button>
+                    <button class="sub-tab-btn" onclick="switchSubTab(4)">
+                        Mastered
+                    </button>
+                </div>
+
+                <div
+                    id="filterContainer"
+                    class="filter-controls"
+                    style="display: none"
+                >
+                    <span>Rating:</span>
+                    <div class="range-inputs">
+                        <input
+                            type="number"
+                            id="minRating"
+                            value="800"
+                            onchange="renderActiveTab()"
+                        />
+                        <span>-</span>
+                        <input
+                            type="number"
+                            id="maxRating"
+                            value="3500"
+                            onchange="renderActiveTab()"
+                        />
+                    </div>
+                    <label style="cursor: pointer; display: flex; gap: 4px"
+                        ><input
+                            type="checkbox"
+                            id="showAllRatings"
+                            checked
+                            onchange="toggleFilterUI()"
+                        />
+                        All</label
+                    >
+
+                    <div
+                        id="contestSpecificFilters"
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            border-left: 1px solid #333;
+                            padding-left: 12px;
+                        "
+                    >
+                        <label style="cursor: pointer"
+                            ><input
+                                type="checkbox"
+                                id="onlySolved"
+                                onchange="renderActiveTab()"
+                            />
+                            Solved</label
+                        >
+                        <label style="cursor: pointer"
+                            ><input
+                                type="checkbox"
+                                id="onlyUnsolved"
+                                onchange="renderActiveTab()"
+                            />
+                            Unsolved</label
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div id="results"></div>
+        </div>
+
+        <script>
+            let appData = {
+                contests: {},
+                globalUnsolved: [],
+                globalSolved: [],
+                allSolvedIds: new Set(),
+                participatedContestIds: new Set(),
+            };
+            let currentTab = "review";
+            let currentSubTab = "contest_unreviewed";
+            let srsProgress = JSON.parse(
+                localStorage.getItem("cf_srs_manual") || "{}",
+            );
+            let solvedTimestamps = {};
+
+            const colors = {
+                review: "#ffcc00",
+                contests: "#00ff88",
+                globalUnsolved: "#ff9f43",
+                target: "#ff6b6b",
+            };
+
+            function toggleFilterUI() {
+                const isAll = document.getElementById("showAllRatings").checked;
+                document.getElementById("minRating").disabled = isAll;
+                document.getElementById("maxRating").disabled = isAll;
+                renderActiveTab();
+            }
+
+            async function fetchData() {
+                const handle = document
+                    .getElementById("handleInput")
+                    .value.trim();
+                if (!handle) return;
+                document.getElementById("status").innerText = "Syncing...";
+                try {
+                    const [rRes, sRes, pRes] = await Promise.all([
+                        fetch(
+                            `https://codeforces.com/api/user.rating?handle=${handle}`,
+                        ),
+                        fetch(
+                            `https://codeforces.com/api/user.status?handle=${handle}`,
+                        ),
+                        fetch(`https://codeforces.com/api/problemset.problems`),
+                    ]);
+                    const rData = await rRes.json(),
+                        sData = await sRes.json(),
+                        pData = await pRes.json();
+
+                    appData = {
+                        contests: {},
+                        globalUnsolved: [],
+                        globalSolved: [],
+                        allSolvedIds: new Set(),
+                        participatedContestIds: new Set(),
+                    };
+                    rData.result.forEach((c) => {
+                        appData.participatedContestIds.add(c.contestId);
+                        appData.contests[c.contestId] = {
+                            name: c.contestName,
+                            problems: [],
+                        };
+                    });
+
+                    const attempts = {};
+                    sData.result.forEach((sub) => {
+                        const pid = `${sub.problem.contestId}${sub.problem.index}`;
+                        if (sub.verdict === "OK") {
+                            appData.allSolvedIds.add(pid);
+                            attempts[pid] = true;
+                            if (
+                                !solvedTimestamps[pid] ||
+                                sub.creationTimeSeconds > solvedTimestamps[pid]
+                            ) {
+                                solvedTimestamps[pid] = sub.creationTimeSeconds;
+                            }
+                        } else if (!attempts[pid]) attempts[pid] = false;
+                    });
+
+                    pData.result.problems.forEach((p) => {
+                        const pid = `${p.contestId}${p.index}`;
+                        const probObj = {
+                            id: pid,
+                            name: p.name,
+                            rating: p.rating || 0,
+                            solved: appData.allSolvedIds.has(pid),
+                            link: `https://codeforces.com/contest/${p.contestId}/problem/${p.index}`,
+                            contestId: p.contestId,
+                        };
+                        if (appData.participatedContestIds.has(p.contestId))
+                            appData.contests[p.contestId].problems.push(
+                                probObj,
+                            );
+                        if (probObj.solved) appData.globalSolved.push(probObj);
+                        if (!probObj.solved && attempts[pid] === false)
+                            appData.globalUnsolved.push(probObj);
+                    });
+
+                    document.getElementById("mainTabs").style.display = "flex";
+                    document.getElementById("status").innerText =
+                        `Synced: ${handle}`;
+                    switchTab(currentTab);
+                } catch (e) {
+                    document.getElementById("status").innerText = "API Error.";
+                }
+            }
+
+            function switchTab(tab) {
+                currentTab = tab;
+                document
+                    .querySelectorAll(".tab-btn")
+                    .forEach((b) => b.classList.remove("active"));
+                document.getElementById(`tab-${tab}`).classList.add("active");
+                document.documentElement.style.setProperty(
+                    "--accent",
+                    colors[tab],
+                );
+                updateUtilityVisibility();
+                renderActiveTab();
+            }
+
+            function switchSubTab(val) {
+                currentSubTab = val;
+                document.querySelectorAll(".sub-tab-btn").forEach((b) => {
+                    const btnText = b.innerText.toLowerCase();
+                    if (val === "contest_unreviewed")
+                        b.classList.toggle(
+                            "active",
+                            btnText.includes("contest"),
+                        );
+                    else
+                        b.classList.toggle(
+                            "active",
+                            btnText ===
+                                (val === 0
+                                    ? "all unreviewed"
+                                    : val === 4
+                                      ? "mastered"
+                                      : `pass ${val}`),
+                        );
+                });
+                updateUtilityVisibility();
+                renderActiveTab();
+            }
+
+            function updateUtilityVisibility() {
+                const utility = document.getElementById("utilityBar");
+                const srs = document.getElementById("srsContainer");
+                const filter = document.getElementById("filterContainer");
+                const contestFilters = document.getElementById(
+                    "contestSpecificFilters",
+                );
+
+                if (currentTab === "target") {
+                    utility.style.display = "none";
+                } else {
+                    utility.style.display = "flex";
+                    srs.style.display =
+                        currentTab === "review" ? "flex" : "none";
+                    if (
+                        currentTab === "contests" ||
+                        currentTab === "globalUnsolved"
+                    ) {
+                        filter.style.display = "flex";
+                        contestFilters.style.display =
+                            currentTab === "contests" ? "flex" : "none";
+                    } else if (
+                        currentTab === "review" &&
+                        (currentSubTab === "contest_unreviewed" ||
+                            currentSubTab === 0)
+                    ) {
+                        filter.style.display = "flex";
+                        contestFilters.style.display = "none";
+                    } else {
+                        filter.style.display = "none";
+                    }
+                }
+            }
+
+            function renderActiveTab() {
+                const container = document.getElementById("results");
+                container.innerHTML = "";
+
+                if (currentTab !== "review")
+                    container.classList.add("compact-view");
+                else container.classList.remove("compact-view");
+
+                const minR = parseInt(
+                    document.getElementById("minRating").value,
+                );
+                const maxR = parseInt(
+                    document.getElementById("maxRating").value,
+                );
+                const showAll =
+                    document.getElementById("showAllRatings").checked;
+                const onlyS = document.getElementById("onlySolved").checked;
+                const onlyU = document.getElementById("onlyUnsolved").checked;
+
+                const filterFn = (p) => {
+                    const rMatch =
+                        showAll || (p.rating >= minR && p.rating <= maxR);
+                    if (currentTab === "contests") {
+                        if (onlyS && !p.solved) return false;
+                        if (onlyU && p.solved) return false;
+                    }
+                    return rMatch;
+                };
+
+                if (currentTab === "target") renderTarget();
+                else if (currentTab === "review") renderReview(filterFn);
+                else if (currentTab === "contests") renderContestView(filterFn);
+                else renderFlatList(appData.globalUnsolved, filterFn);
+            }
+
+            function renderReview(filterFn) {
+                const container = document.getElementById("results");
+                let problems = [];
+                if (currentSubTab === "contest_unreviewed") {
+                    problems = appData.globalSolved.filter(
+                        (p) =>
+                            (srsProgress[p.id] || 0) === 0 &&
+                            appData.participatedContestIds.has(p.contestId),
+                    );
+                } else {
+                    problems = appData.globalSolved.filter(
+                        (p) => (srsProgress[p.id] || 0) === currentSubTab,
+                    );
+                }
+                if (
+                    currentSubTab === "contest_unreviewed" ||
+                    currentSubTab === 0
+                )
+                    problems = problems.filter(filterFn);
+
+                problems.sort(
+                    (a, b) =>
+                        (solvedTimestamps[a.id] || 0) -
+                        (solvedTimestamps[b.id] || 0),
+                );
+
+                const grid = document.createElement("div");
+                grid.className = "problem-grid";
+                problems.forEach((p) =>
+                    grid.appendChild(createCard(p, true, false)),
+                );
+                container.appendChild(grid);
+            }
+
+            function renderContestView(filterFn) {
+                const container = document.getElementById("results");
+                Object.keys(appData.contests)
+                    .sort((a, b) => b - a)
+                    .forEach((cid) => {
+                        const contest = appData.contests[cid];
+                        const filtered = contest.problems
+                            .filter(filterFn)
+                            .sort((a, b) => a.rating - b.rating);
+                        if (filtered.length === 0) return;
+                        const group = document.createElement("div");
+                        group.className = "data-group";
+                        group.innerHTML = `<div class="group-title">${contest.name}</div>`;
+                        const grid = document.createElement("div");
+                        grid.className = "problem-grid";
+                        filtered.forEach((p) =>
+                            grid.appendChild(createCard(p, false, true)),
+                        );
+                        group.appendChild(grid);
+                        container.appendChild(group);
+                    });
+            }
+
+            function renderFlatList(data, filterFn) {
+                const container = document.getElementById("results");
+                const grid = document.createElement("div");
+                grid.className = "problem-grid";
+                data.filter(filterFn)
+                    .sort((a, b) => a.rating - b.rating)
+                    .forEach((p) =>
+                        grid.appendChild(createCard(p, false, true)),
+                    );
+                container.appendChild(grid);
+            }
+
+            function createCard(p, srsMode, useColor) {
+                const card = document.createElement("div");
+                card.className = `problem-card ${p.solved && useColor ? "is-solved-color" : ""}`;
+                card.onclick = () => window.open(p.link, "_blank");
+
+                let timeText = "";
+                if (solvedTimestamps[p.id]) {
+                    const secDiff =
+                        Math.floor(Date.now() / 1000) - solvedTimestamps[p.id];
+                    const days = Math.floor(secDiff / 86400);
+                    timeText =
+                        days === 0 ? "Solved today" : `Solved ${days} days ago`;
+                }
+
+                let contestTag =
+                    currentTab === "review" &&
+                    appData.participatedContestIds.has(p.contestId)
+                        ? `<div class="contest-tag">Attended Contest</div>`
+                        : "";
+
+                card.innerHTML = `
+                <div class="prob-header"><span>${p.id}</span><span>${p.rating || "Unrated"}</span></div>
+                <div class="prob-name" title="${p.name}">${p.name}</div>
+                <div class="solved-ago">${srsMode ? timeText : ""}</div>
+                ${contestTag}
+            `;
+
+                if (srsMode) {
+                    const footer = document.createElement("div");
+                    footer.className = "pass-actions";
+                    const prev = document.createElement("button");
+                    prev.className = "pass-btn";
+                    prev.innerText = "Prev";
+                    prev.onclick = (e) => {
+                        e.stopPropagation();
+                        movePass(p.id, -1);
+                    };
+                    if (
+                        srsProgress[p.id] === undefined ||
+                        srsProgress[p.id] === 0
+                    )
+                        prev.disabled = true;
+                    const next = document.createElement("button");
+                    next.className = "pass-btn";
+                    next.innerText = srsProgress[p.id] === 4 ? "Done" : "Next";
+                    next.onclick = (e) => {
+                        e.stopPropagation();
+                        movePass(p.id, 1);
+                    };
+                    if (srsProgress[p.id] === 4) next.disabled = true;
+                    footer.append(prev, next);
+                    card.appendChild(footer);
+                }
+                return card;
+            }
+
+            function movePass(pid, delta) {
+                srsProgress[pid] = Math.max(
+                    0,
+                    Math.min(4, (srsProgress[pid] || 0) + delta),
+                );
+                localStorage.setItem(
+                    "cf_srs_manual",
+                    JSON.stringify(srsProgress),
+                );
+                renderActiveTab();
+            }
+
+            function renderTarget() {
+                const container = document.getElementById("results");
+                const saved = localStorage.getItem("cf_target_text") || "";
+                container.innerHTML = `<div class="target-container"><textarea id="target-editor" oninput="localStorage.setItem('cf_target_text', this.value)" placeholder="Enter goals...">${saved}</textarea></div>`;
+            }
+        </script>
+    </body>
+</html>
