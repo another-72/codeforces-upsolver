@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CF Personal Upsolver</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #9e9e9e;
+            --accent: #bb86fc;
+            --accent-hover: #9965f4;
+            --success: #03dac6;
+            --warning: #cf6679;
+            --border: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        input {
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            width: 100%;
+            max-width: 400px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button.fetch-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--accent);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button.fetch-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        #status {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            min-height: 24px;
+        }
+
+        /* Tab System */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            display: none; /* Hidden until data loads */
+        }
+
+        .tab-btn {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background-color: #2a2a2a;
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .tab-btn.active#btn-solved, .tab-btn.active#btn-globalSolved { background-color: var(--success); border-color: var(--success); }
+        .tab-btn.active#btn-globalUnsolved { background-color: var(--warning); border-color: var(--warning); }
+
+        /* Problem Grid & Groups */
+        .data-group {
+            margin-bottom: 40px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .data-group h2 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .solved-view .data-group h2 { color: var(--success); }
+        .global-view .data-group h2 { color: var(--warning); }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .problem-card {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+
+        .solved-view .problem-card:hover { border-color: var(--success); }
+        .global-view .problem-card:hover { border-color: var(--warning); }
+
+        /* Specific style for solved cards inside the Contest View */
+        .problem-card.is-solved {
+            border-color: var(--success);
+            background-color: rgba(3, 218, 198, 0.05);
+        }
+        .problem-card.is-solved:hover {
+            border-color: var(--success);
+        }
+
+        .prob-id {
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .prob-name {
+            font-size: 1.05rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>CF Personal Upsolver</h1>
+        
+        <div class="search-box">
+            <input type="text" id="handleInput" placeholder="Enter your Codeforces handle" value="prncofprs" onkeypress="if(event.key === 'Enter') fetchUpsolveData()">
+            <button class="fetch-btn" onclick="fetchUpsolveData()">Fetch Data</button>
+        </div>
+
+        <div id="status">Ready.</div>
+        
+        <div class="tabs" id="tabContainer">
+            <button class="tab-btn active" id="btn-unsolved" onclick="switchTab('unsolved')">Contest Unsolved</button>
+            <button class="tab-btn" id="btn-solved" onclick="switchTab('solved')">Contest Solved</button>
+            <button class="tab-btn" id="btn-contests" onclick="switchTab('contests')">Contests View</button>
+            <button class="tab-btn" id="btn-globalUnsolved" onclick="switchTab('globalUnsolved')">Global Unsolved</button>
+            <button class="tab-btn" id="btn-globalSolved" onclick="switchTab('globalSolved')">Global Solved</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let appData = {
+            unsolved: {},       // Grouped by Rating (Participated Contests Only)
+            solved: {},         // Grouped by Rating (Participated Contests Only)
+            contests: {},       // Grouped by Contest ID
+            globalUnsolved: {}, // Grouped by Rating (All attempted but never AC'd)
+            globalSolved: {}    // Grouped by Rating (Every single AC on the account)
+        };
+
+        async function fetchUpsolveData() {
+            const handle = document.getElementById('handleInput').value.trim();
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            const tabContainer = document.getElementById('tabContainer');
+
+            if (!handle) {
+                statusEl.innerText = 'Please enter a handle.';
+                return;
+            }
+
+            statusEl.innerText = `Fetching participated contests for ${handle}...`;
+            resultsEl.innerHTML = '';
+            tabContainer.style.display = 'none';
+            appData = { unsolved: {}, solved: {}, contests: {}, globalUnsolved: {}, globalSolved: {} };
+            
+            try {
+                // 1. Get participated contests
+                const ratingRes = await fetch(`https://codeforces.com/api/user.rating?handle=${handle}`);
+                const ratingData = await ratingRes.json();
+                if (ratingData.status !== 'OK') throw new Error('Could not find user rating history.');
+                
+                const myContests = new Map();
+                ratingData.result.forEach(c => {
+                    myContests.set(c.contestId, c.contestName);
+                    appData.contests[c.contestId] = { name: c.contestName, problems: [] };
+                });
+                
+                statusEl.innerText = `Found ${myContests.size} participated contests. Fetching your submissions...`;
+
+                // 2. Get ALL submissions to find global solves and attempts
+                const statusRes = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`);
+                const statusData = await statusRes.json();
+                if (statusData.status !== 'OK') throw new Error('Could not fetch submissions.');
+                
+                const globalSolved = new Set();
+                const globalAttempted = new Set();
+                
+                statusData.result.forEach(sub => {
+                    if (sub.problem.contestId) {
+                        const pid = `${sub.problem.contestId}${sub.problem.index}`;
+                        globalAttempted.add(pid);
+                        if (sub.verdict === 'OK') {
+                            globalSolved.add(pid);
+                        }
+                    }
+                });
+                
+                statusEl.innerText = `Found ${globalSolved.size} total solves. Downloading problemset...`;
+
+                // 3. Get the global problemset and route problems into the correct buckets
+                const probRes = await fetch(`https://codeforces.com/api/problemset.problems`);
+                const probData = await probRes.json();
+                if (probData.status !== 'OK') throw new Error('Could not fetch the problemset.');
+
+                statusEl.innerText = 'Crunching the numbers...';
+
+                probData.result.problems.forEach(prob => {
+                    const cid = prob.contestId;
+                    const pid = `${cid}${prob.index}`;
+                    const rating = prob.rating || 'Unrated';
+                    const isSolved = globalSolved.has(pid);
+                    
+                    const probObj = {
+                        id: pid,
+                        name: prob.name,
+                        rating: rating,
+                        link: `https://codeforces.com/contest/${cid}/problem/${prob.index}`,
+                        isSolved: isSolved
+                    };
+
+                    // Bucket A & B: Officially participated contests
+                    if (myContests.has(cid)) {
+                        appData.contests[cid].problems.push(probObj);
+
+                        if (isSolved) {
+                            if (!appData.solved[rating]) appData.solved[rating] = [];
+                            appData.solved[rating].push(probObj);
+                        } else {
+                            if (!appData.unsolved[rating]) appData.unsolved[rating] = [];
+                            appData.unsolved[rating].push(probObj);
+                        }
+                    }
+
+                    // Bucket C: Global Attempted but NEVER solved (Unsuccessful)
+                    if (globalAttempted.has(pid) && !isSolved) {
+                        if (!appData.globalUnsolved[rating]) appData.globalUnsolved[rating] = [];
+                        appData.globalUnsolved[rating].push(probObj);
+                    }
+
+                    // Bucket D: Global Solved (Every single AC)
+                    if (isSolved) {
+                        if (!appData.globalSolved[rating]) appData.globalSolved[rating] = [];
+                        appData.globalSolved[rating].push(probObj);
+                    }
+                });
+
+                statusEl.innerText = `Dashboard loaded successfully for ${handle}.`;
+                tabContainer.style.display = 'flex';
+                switchTab('unsolved'); // Default to Contest Unsolved
+
+            } catch (err) {
+                statusEl.innerText = `Error: ${err.message}`;
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${tabName}`).classList.add('active');
+            
+            renderUI(appData[tabName], tabName);
+        }
+
+        function renderUI(data, viewMode) {
+            const container = document.getElementById('results');
+            container.innerHTML = '';
+            
+            // Set specific CSS themes based on the tab
+            container.className = '';
+            if (viewMode === 'solved' || viewMode === 'globalSolved') container.className = 'solved-view';
+            if (viewMode === 'globalUnsolved') container.className = 'global-view';
+
+            // --- SPECIAL RENDER FOR 'CONTESTS' TAB ---
+            if (viewMode === 'contests') {
+                const cids = Object.keys(data).sort((a, b) => b - a); // Sort newest first
+                
+                if (cids.length === 0) {
+                    container.innerHTML = `<div class="empty-state">No contests found.</div>`;
+                    return;
+                }
+
+                cids.forEach(cid => {
+                    const contest = data[cid];
+                    const group = document.createElement('div');
+                    group.className = 'data-group';
+                    
+                    const solvedCount = contest.problems.filter(p => p.isSolved).length;
+                    
+                    const title = document.createElement('h2');
+                    title.innerHTML = `<span>${contest.name}</span> <span style="font-size: 1rem; color: var(--text-muted)">${solvedCount}/${contest.problems.length} Solved</span>`;
+                    group.appendChild(title);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'problem-grid';
+
+                    contest.problems.sort((a, b) => a.id.localeCompare(b.id)).forEach(p => {
+                        const card = document.createElement('a');
+                        card.className = `problem-card ${p.isSolved ? 'is-solved' : ''}`;
+                        card.href = p.link;
+                        card.target = '_blank';
+                        card.innerHTML = `
+                            <span class="prob-id"><span>${p.id}</span> <span>${p.rating}</span></span>
+                            <span class="prob-name" title="${p.name}">${p.name}</span>
+                        `;
+                        grid.appendChild(card);
+                    });
+
+                    group.appendChild(grid);
+                    container.appendChild(group);
+                });
+                return;
+            }
+
+            // --- STANDARD RATING RENDER FOR EVERYTHING ELSE ---
+            const ratings = Object.keys(data).filter(r => r !== 'Unrated').sort((a, b) => parseInt(a) - parseInt(b));
+            if (data['Unrated']) ratings.push('Unrated'); // Push unrated to the end
+
+            if (ratings.length === 0) {
+                let msg = "Nothing to show here.";
+                if (viewMode === 'globalUnsolved') msg = "No global unsuccessful attempts. You AC everything you touch!";
+                if (viewMode === 'globalSolved') msg = "You haven't solved any problems yet.";
+                container.innerHTML = `<div class="empty-state">${msg}</div>`;
+                return;
+            }
+
+            ratings.forEach(rating => {
+                const group = document.createElement('div');
+                group.className = 'data-group';
+                
+                // Add count to header so you know how many problems are in that rating bracket
+                const title = document.createElement('h2');
+                title.innerHTML = `<span>Rating: ${rating}</span> <span style="font-size: 1rem; color: var(--text-muted)">${data[rating].length} Problems</span>`;
+                group.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'problem-grid';
+
+                data[rating].sort((a, b) => a.id.localeCompare(b.id)).forEach(p => {
+                    const card = document.createElement('a');
+                    card.className = 'problem-card';
+                    card.href = p.link;
+                    card.target = '_blank';
+                    
+                    card.innerHTML = `
+                        <span class="prob-id">${p.id}</span>
+                        <span class="prob-name" title="${p.name}">${p.name}</span>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                group.appendChild(grid);
+                container.appendChild(group);
+            });
+        }
+    </script>
+</body>
+</html>
